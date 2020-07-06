@@ -239,6 +239,30 @@ class HyperparameterTuner:
         Then check distance function  [canberra > minkowski > euclidean > gaussian > inner_prod > cosine_dist]
         If they have same distance function, choose model which has a less k.
         """
+        # Method 1
+        # best_f1_score, best_k = 0, -1
+        # for scaling_name, scaling_class in scaling_classes.items():
+        #     for name, func in distance_funcs.items():
+        #         scaler = scaling_class()
+        #         train_features_scaled = scaler(x_train)
+        #         valid_features_scaled = scaler(x_val)
+        #         k_lim = len(x_train) - 1
+        #         for k in range(1, min(31, k_lim), 2):
+        #             model = KNN(k=k, distance_function=func)
+        #             model.train(train_features_scaled, y_train)
+        #             valid_f1_score = f1_score(y_val, model.predict(valid_features_scaled))
+        #             if valid_f1_score > best_f1_score:
+        #                 best_f1_score, best_k = valid_f1_score, k
+        #                 best_model = model
+        #                 best_func = name
+        #                 best_scaler = scaling_name
+
+        # self.best_k = best_k
+        # self.best_distance_function = best_func
+        # self.best_scaler = best_scaler
+        # self.best_model = best_model
+
+
         dist_func_whole = ["canberra", "minkowski", "euclidean", "gaussian", "inner_prod", "cosine_dist"]
         dist_func = [i for i in dist_func_whole if i in distance_funcs.keys()]
 
@@ -249,22 +273,22 @@ class HyperparameterTuner:
         models = []
 
         # loop through different scaling classes
-        for class_name in scaler:
+        for class_name in scaling_classes.keys():
             result_scale = []
             scale = scaling_classes[class_name]()
-            x_train = scale(x_train)
-            x_val = scale(x_val)
+            x_train_scaled = scale(x_train)
+            x_val_scaled = scale(x_val)
             # loop through different k
-            for name in dist_func:
+            for name in distance_funcs.keys():
                 # loop through distance functions
                 result_func = []
                 for k in range(1, 30, 2):
                     func = distance_funcs[name]
                     knn = KNN(k, func)
-                    knn.train(x_train, y_train)
+                    knn.train(x_train_scaled, y_train)
                     models.append(knn)
                     # scalers.append(scale)
-                    label = knn.predict(x_val)
+                    label = knn.predict(x_val_scaled)
                     f1 = f1_score(y_val, label)
                     result_func.append(f1)
 
@@ -285,8 +309,8 @@ class HyperparameterTuner:
         
         # You need to assign the final values to these variables
         self.best_k = k_ind * 2 + 1
-        self.best_distance_function = dist_func[func_ind]
-        self.best_scaler = scaler[scale_ind]
+        self.best_distance_function = list(distance_funcs.keys())[func_ind]
+        self.best_scaler = list(scaling_classes.keys())[scale_ind]
         self.best_model = models[index]
 
 
